@@ -1,0 +1,1 @@
+Este repositorio contiene el software y el firmware de la nueva version del Sistema de Registro Continuo basado en el SoC ESP32. 
