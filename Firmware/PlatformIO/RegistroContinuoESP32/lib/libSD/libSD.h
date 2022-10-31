@@ -38,7 +38,7 @@ void listDir(fs::FS &fs, const char *dirname, uint8_t levels)
     }
 }
 
-void createDir(fs::FS &fs, const char *path)
+void createDir(fs::FS &fs, const String path)
 {
     Serial.printf("Creating Dir: %s\n", path);
     if (fs.mkdir(path))
@@ -202,7 +202,7 @@ void testFileIO(fs::FS &fs, const char *path)
 
 //*******************************************************************************************
 
-void crearArchivo(fs::FS &fs, const char *path)
+void crearArchivo(fs::FS &fs, const String path)
 {
     Serial.printf("Escribiendo archivo: %s\n", path);
 
@@ -215,7 +215,7 @@ void crearArchivo(fs::FS &fs, const char *path)
     file.close();
 }
 
-void escribirArchivo(fs::FS &fs, const char *path, const byte *buffer, const short numbytes)
+void escribirArchivo(fs::FS &fs, const String path, const byte *buffer, const short numbytes)
 {
     Serial.printf("Escribiendo archivo: %s\n", path);
 

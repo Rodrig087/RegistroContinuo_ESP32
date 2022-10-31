@@ -24,17 +24,27 @@ static const int spiClk = 1000000; // 1 MHz
 short banInicio;
 short banInitGPS;
 short banPrueba;
+boolean banTiempPIC = false;
+boolean banNuevoDir = true;
+boolean banWriteSD = false;
+
 byte tiempoPIC[8];
+byte tramaAceleracion[2560];
 // short fuenteTiempoPic;
 
-String tiempoString;
-short banWriteSD;
+String fechaPIC;
+String horaPIC;
+String pathDirectorio;
+String pathArchivo;
+
 
 // Punteros no inicializados a objetos SPIN
 SPIClass *hspi = NULL;
 
 // Metodos para la comunicacion con el dsPIC
+void IniciarMuestreo();                       // C:0xA1	F:0xF1
 void IniciarGPS();                            // C:0xA2	F:0xF2
+void ObtenerTramaAceleracion();               // C:0xA3	F:0xF3
 void ObtenerTiempoPIC();                      // C:0xA5	F:0xF5
 void ObtenerReferenciaTiempo(int referencia); // C:0xA6	F:0xF6
 
@@ -63,8 +73,9 @@ void IRAM_ATTR ObtenerOperacion()
   // Aqui se selecciona el tipo de operacion que se va a ejecutar
   if (bufferSPI == 0xB1)
   {
+    digitalWrite(LedTest, !digitalRead(LedTest));
     // Serial.print("Interrupcion P1: 0xB1\n");
-    //  NuevoCiclo();
+    ObtenerTramaAceleracion();
   }
   if (bufferSPI == 0xB2)
   {
@@ -72,12 +83,6 @@ void IRAM_ATTR ObtenerOperacion()
     // Serial.print("Interrupcion P1: 0xB2\n");
     ObtenerTiempoPIC();
   }
-
-  /*
-  if (bufferSPI == 0xEF){
-    digitalWrite(LedTest, !digitalRead(LedTest));
-  }
-  */
 }
 
 void IRAM_ATTR EnviarSolicitud()
@@ -104,10 +109,25 @@ void IRAM_ATTR EnviarSolicitud()
 // Metodos para la comunicacion ESP32-dsPIC
 //**************************************************************************************************************************************
 
+// C:0xA1 F:0xF1
+void IniciarMuestreo()
+{
+  Serial.print("Iniciando Muestreo...\n");
+  // Activa la comunicacion SPI:
+  hspi->beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE3));
+  digitalWrite(hspi->pinSS(), LOW);
+  // Envia la solicitud:
+  hspi->transfer(0xA1);
+  delayMicroseconds(DELAY_SPI);
+  hspi->transfer(0xF1);
+  // Desactiva la comunicacion SPI:
+  digitalWrite(hspi->pinSS(), HIGH);
+  hspi->endTransaction();
+}
+
 // C:0xA2 F:0xF2
 void IniciarGPS()
 {
-
   Serial.print("Iniciando GPS...\n");
   // Activa la comunicacion SPI:
   hspi->beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE3));
@@ -123,10 +143,37 @@ void IniciarGPS()
   hspi->endTransaction();
 }
 
+// C:0xA3	F:0xF3
+void ObtenerTramaAceleracion()
+{
+  // Serial.print("Hora dsPIC: ");
+  //  Activa la comunicacion SPI
+  hspi->beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE3));
+  digitalWrite(hspi->pinSS(), LOW);
+  // Envia la cabecera de trama:
+  hspi->transfer(0xA3);
+  delayMicroseconds(DELAY_SPI);
+  // Recibe el byte que indica la fuente de tiempo del PIC
+  byte fuenteTiempoPic = hspi->transfer(0);
+  delayMicroseconds(DELAY_SPI);
+  // Recibe la trama de tiempo:
+  for (int i = 0; i < 2506; i++)
+  {
+    byte bufferSPI = hspi->transfer(0x00);
+    tramaAceleracion[i] = bufferSPI; // Guarda la hora y fecha devuelta por el dsPIC
+    delayMicroseconds(DELAY_SPI);
+  }
+  // Envia el final de trama:
+  hspi->transfer(0xF3);
+  delayMicroseconds(DELAY_SPI);
+  // Desactiva la comunicacion SPI:
+  digitalWrite(hspi->pinSS(), HIGH);
+  hspi->endTransaction();
+}
+
 // C:0xA5	F:0xF5
 void ObtenerTiempoPIC()
 {
-
   // Serial.print("Hora dsPIC: ");
   //  Activa la comunicacion SPI
   hspi->beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE3));
@@ -151,6 +198,16 @@ void ObtenerTiempoPIC()
   digitalWrite(hspi->pinSS(), HIGH);
   hspi->endTransaction();
 
+  //Guarda la fecha y hora en formato String:
+  fechaPIC = String(tiempoPIC[0]) + String(tiempoPIC[1]) + String(tiempoPIC[2]);
+  horaPIC = String(tiempoPIC[3]) + String(tiempoPIC[4]) + String(tiempoPIC[5]);
+
+  //Activa la bandera para indicar que se recupero la hora del dsPIC:
+  banTiempPIC = true;
+
+  banWriteSD = true;
+  
+/*
   // Imprime la fuente de tiempo:
   switch (fuenteTiempoPic)
   {
@@ -170,36 +227,9 @@ void ObtenerTiempoPIC()
     break;
   }
   // Imprime la trama de tiempo:
-
-  /*Serial.print(tiempoPIC[3]);
-  Serial.print(":");
-  Serial.print(tiempoPIC[4]);
-  Serial.print(":");
-  Serial.print(tiempoPIC[5]);
-  Serial.print(" ");
-  Serial.print(tiempoPIC[0]);
-  Serial.print("/");
-  Serial.print(tiempoPIC[1]);
-  Serial.print("/");
-  Serial.print(tiempoPIC[2]);
-  Serial.print("\n");
-  */
-
-  // Graba en la SD el tiempo recuperado:
-  //tiempoString = String(tiempoPIC[3]) + ":" + String(tiempoPIC[4]) + ":" + String(tiempoPIC[5]) + " " + String(tiempoPIC[0]) + "/" + String(tiempoPIC[1]) + "/" + String(tiempoPIC[2]) + "\n";
-  // Serial.print(tiempoString);
-  banWriteSD = 1;
-  // Serial.print("\n");
-  // appendFile(SD, "/Tiempo.txt", tiempoString);
-
-  // prueba trama tiempo
-  // tiempoPIC[0] = 77;
-  // tiempoPIC[1] = 56;
-  // tiempoPIC[2] = 55;
-  // tiempoPIC[3] = 0;
-  // tiempoPIC[4] = 1;
-  // tiempoPIC[5] = 2;
-
+  tiempoString = String(tiempoPIC[3]) + ":" + String(tiempoPIC[4]) + ":" + String(tiempoPIC[5]) + " " + String(tiempoPIC[0]) + "/" + String(tiempoPIC[1]) + "/" + String(tiempoPIC[2]) + "\n";
+  Serial.print(tiempoString);
+ */ 
 }
 
 // C:0xA6	F:0xF6
@@ -246,7 +276,7 @@ void setup()
   banInitGPS = 0;
   digitalWrite(MCLR, 1);
   banPrueba = 0;
-  banWriteSD = 0;
+  //banWriteSD = 0;
 
   // Define los pines  LedTest como salida y P1 como entrada
   pinMode(LedTest, OUTPUT);
@@ -291,10 +321,6 @@ void setup()
 
   Serial.printf("**************************************\n");
 
-  // Crea un archivo para guardar el tiempo:
-  //writeFile(SD, "/Tiempo.txt", "0");
-  crearArchivo(SD, "/Tiempo.txt");
-
   // Inicializa una instancia de la clase SPIClass adjunta a hspi para la comunicacion con el dsPIC:
   hspi = new SPIClass(HSPI);
   hspi->begin();
@@ -313,6 +339,15 @@ void loop()
 
   if (banInicio == 1)
   {
+    if (banTiempPIC==true && banNuevoDir == true){
+      // Crea un directorio con la fecha por nombre:
+      pathDirectorio = "/" + fechaPIC;
+      pathArchivo = pathDirectorio + "/" + fechaPIC + horaPIC + ".dat";
+      createDir(SD, pathDirectorio);
+      crearArchivo(SD, pathArchivo);
+      banTiempPIC = false;
+      banNuevoDir = false;
+    }   
     if (banPrueba == 0)
     {
       Serial.print("\n***************************\n");
@@ -320,11 +355,10 @@ void loop()
       ObtenerReferenciaTiempo(2);
       banPrueba = 1;
     }
-
-    if (banWriteSD == 1)
+    if (banWriteSD == true)
     {
-      escribirArchivo(SD, "/Tiempo.txt", tiempoPIC, 6);
-      banWriteSD = 0;
+      escribirArchivo(SD, pathArchivo, tiempoPIC, 6);
+      banWriteSD = false;
     }
     // IniciarGPS();
   }
