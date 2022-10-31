@@ -1,0 +1,91 @@
+main
+	ConfiguracionPrincipal
+		SPI1_Init_Advanced
+		SPI2_Init
+		UART1_Init
+			Get_Fosc_kHz
+			Get_Fosc_Per_Cyc
+			Delay_100ms
+			_Multiply_32x32
+			_Modulus_32x32
+			_Divide_32x32
+		ADXL355_write_byte
+			SPI2_Write
+				SPI2_Read
+	DS3234_init
+		SPI2_Init_Advanced
+		DS3234_write_byte
+			SPI2_Write
+		SPI2_Init
+	ADXL355_init
+		ADXL355_write_byte
+int_2
+int_1
+	Muestrear
+		ADXL355_write_byte
+		ADXL355_read_byte
+			SPI2_Write
+			SPI2_Read
+		ADXL355_read_FIFO
+			SPI2_Write
+			SPI2_Read
+		AjustarTiempoSistema
+			_Divide_32x32
+			_Modulus_32x32
+		InterrupcionP1
+	AjustarTiempoSistema
+	InterrupcionP1
+urx_1
+	RecuperarHoraRTC
+		SPI2_Init_Advanced
+		DS3234_read_byte
+			SPI2_Write
+			SPI2_Read
+		Bcd2Dec
+		SPI2_Init
+		_Multiply_32x32
+	RecuperarFechaRTC
+		SPI2_Init_Advanced
+		DS3234_read_byte
+		Bcd2Dec
+		SPI2_Init
+		_Multiply_32x32
+	AjustarTiempoSistema
+	InterrupcionP1
+	RecuperarHoraGPS
+		atoi
+			isdigit
+		_Multiply_32x32
+	RecuperarFechaGPS
+		atoi
+		_Multiply_32x32
+spi_1
+	GPS_init
+		UART1_Write_Text
+			UART1_Write
+	RecuperarHoraRPI
+		_Multiply_32x32
+	RecuperarFechaRPI
+		_Multiply_32x32
+	DS3234_setDate
+		SPI2_Init_Advanced
+		Dec2Bcd
+		DS3234_write_byte
+		SPI2_Init
+		_Divide_32x32
+		_Modulus_32x32
+	RecuperarHoraRTC
+	RecuperarFechaRTC
+	AjustarTiempoSistema
+	InterrupcionP1
+Timer3Int
+	DS3234_setDate
+	InterrupcionP1
+Timer2Int
+	RecuperarHoraRTC
+	RecuperarFechaRTC
+	AjustarTiempoSistema
+	InterrupcionP1
+Timer1Int
+	ADXL355_read_byte
+	ADXL355_read_FIFO
