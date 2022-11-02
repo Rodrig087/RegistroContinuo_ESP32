@@ -3093,10 +3093,6 @@ _int_1:
 
 ;Acelerografo.c,516 :: 		void int_1() org IVT_ADDR_INT1INTERRUPT
 ;Acelerografo.c,519 :: 		INT1IF_bit = 0; // Limpia la bandera de interrupcion externa INT1
-	PUSH	W10
-	PUSH	W11
-	PUSH	W12
-	PUSH	W13
 	BCLR	INT1IF_bit, BitPos(INT1IF_bit+0)
 ;Acelerografo.c,529 :: 		if (banSetReloj == 1)
 	MOV	#lo_addr(_banSetReloj), W0
@@ -3141,30 +3137,10 @@ L__int_1384:
 	CALL	_Muestrear
 ;Acelerografo.c,544 :: 		}
 L_int_1144:
-;Acelerografo.c,550 :: 		AjustarTiempoSistema(horaSistema, fechaSistema, tiempo); // Actualiza los datos de la trama tiempo con la hora y fecha recuperadas
-	MOV	_fechaSistema, W12
-	MOV	_fechaSistema+2, W13
-	MOV	_horaSistema, W10
-	MOV	_horaSistema+2, W11
-	MOV	#lo_addr(_tiempo), W0
-	PUSH	W0
-	CALL	_AjustarTiempoSistema
-	SUB	#2, W15
-;Acelerografo.c,551 :: 		fuenteReloj = 2;                                         // Fuente de reloj = RTC
-	MOV	#lo_addr(_fuenteReloj), W1
-	MOV.B	#2, W0
-	MOV.B	W0, [W1]
-;Acelerografo.c,552 :: 		InterrupcionP1(0xB2);                                    // Envia la hora local a la RPi
-	MOV.B	#178, W10
-	CALL	_InterrupcionP1
 ;Acelerografo.c,555 :: 		}
 L_int_1142:
 ;Acelerografo.c,557 :: 		}
 L_end_int_1:
-	POP	W13
-	POP	W12
-	POP	W11
-	POP	W10
 	MOV	#26, W0
 	REPEAT	#12
 	POP	[W0--]

@@ -968,9 +968,9 @@ void int_1() org IVT_ADDR_INT1INTERRUPT
 
 
 
- AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
- fuenteReloj = 2;
- InterrupcionP1(0xB2);
+
+
+
 
 
  }

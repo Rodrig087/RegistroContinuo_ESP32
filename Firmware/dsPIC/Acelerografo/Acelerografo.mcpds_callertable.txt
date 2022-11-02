@@ -33,8 +33,6 @@ int_1
 			_Divide_32x32
 			_Modulus_32x32
 		InterrupcionP1
-	AjustarTiempoSistema
-	InterrupcionP1
 urx_1
 	RecuperarHoraRTC
 		SPI2_Init_Advanced

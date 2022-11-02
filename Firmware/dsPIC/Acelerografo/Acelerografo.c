@@ -547,9 +547,9 @@ void int_1() org IVT_ADDR_INT1INTERRUPT
       // Recupera el tiempo del RTC:
          //horaSistema = RecuperarHoraRTC();                        // Recupera la hora del RTC
          //fechaSistema = RecuperarFechaRTC();                      // Recupera la fecha del RTC
-         AjustarTiempoSistema(horaSistema, fechaSistema, tiempo); // Actualiza los datos de la trama tiempo con la hora y fecha recuperadas
-         fuenteReloj = 2;                                         // Fuente de reloj = RTC
-         InterrupcionP1(0xB2);                                    // Envia la hora local a la RPi
+         //AjustarTiempoSistema(horaSistema, fechaSistema, tiempo); // Actualiza los datos de la trama tiempo con la hora y fecha recuperadas
+         //fuenteReloj = 2;                                         // Fuente de reloj = RTC
+         //InterrupcionP1(0xB2);                                    // Envia la hora local a la RPi
       //Fin prueba
       
    }

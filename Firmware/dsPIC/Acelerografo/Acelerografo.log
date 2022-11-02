@@ -28,11 +28,11 @@ hint: 23	1164	Variable 'horaRPi' has been eliminated by optimizer	Acelerografo.c
 hint: 138	1164	Variable 'value' has been eliminated by optimizer	Acelerografo.c
 hint: 150	1164	Variable 'muestra' has been eliminated by optimizer	Acelerografo.c
 hint: 168	1164	Variable 'add' has been eliminated by optimizer	Acelerografo.c
-diagnostics: 0	127	All files Compiled in 157 ms	 
+diagnostics: 0	127	All files Compiled in 141 ms	 
 hint: 0	1144	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)
 hint: 0	1144	Static RAM (bytes): 2988   Dynamic RAM (bytes): 25684	Static RAM (bytes): 2988   Dynamic RAM (bytes): 25684
-hint: 0	1144	Used ROM (bytes): 6256 (4%)  Free ROM (bytes): 169852 (96%)	Used ROM (bytes): 6256 (4%)  Free ROM (bytes): 169852 (96%)
+hint: 0	1144	Used ROM (bytes): 6214 (4%)  Free ROM (bytes): 169894 (96%)	Used ROM (bytes): 6214 (4%)  Free ROM (bytes): 169894 (96%)
 diagnostics: 0	125	Project Linked Successfully	Acelerografo.mcpds
-diagnostics: 0	128	Linked in 156 ms	 
-diagnostics: 0	129	Project 'Acelerografo.mcpds' completed: 422 ms	 
-diagnostics: 0	103	Finished successfully: 28 oct. 2022, 13:48:21	Acelerografo.mcpds
+diagnostics: 0	128	Linked in 140 ms	 
+diagnostics: 0	129	Project 'Acelerografo.mcpds' completed: 390 ms	 
+diagnostics: 0	103	Finished successfully: 01 nov. 2022, 17:57:16	Acelerografo.mcpds
