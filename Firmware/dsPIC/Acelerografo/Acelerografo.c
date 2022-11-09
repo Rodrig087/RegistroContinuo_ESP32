@@ -291,8 +291,6 @@ void Muestrear()
 
       banCiclo = 2; // Limpia la bandera de ciclo completo
 
-      // tramaCompleta[0] = contCiclos; // LLena el primer elemento de la tramaCompleta con el contador de ciclos
-      tramaCompleta[0] = fuenteReloj; // LLena el primer elemento de la tramaCompleta con el identificador de fuente de reloj
       numFIFO = ADXL355_read_byte(FIFO_ENTRIES);
       numSetsFIFO = (numFIFO) / 3; // Lee el numero de sets disponibles en el FIFO
 
@@ -311,23 +309,25 @@ void Muestrear()
       {
          if ((x == 0) || (x % 9 == 0))
          {
-            tramaCompleta[contFIFO + contMuestras + x] = contMuestras; // Funciona bien
-            tramaCompleta[contFIFO + contMuestras + x + 1] = datosFIFO[x];
+            tramaCompleta[7 + contFIFO + contMuestras + x] = contMuestras; // Funciona bien
+            tramaCompleta[7 + contFIFO + contMuestras + x + 1] = datosFIFO[x];
             contMuestras++;
          }
          else
          {
-            tramaCompleta[contFIFO + contMuestras + x] = datosFIFO[x];
+            tramaCompleta[7 + contFIFO + contMuestras + x] = datosFIFO[x];
          }
       }
 
-      // LLena la trama tiempo con el valor del tiempo actual del sistema y luega rellena la tramaCompleta con los valores de esta trama
+      //Agrega la trama de tiempo a la trama completa:
+      tramaCompleta[0] = fuenteReloj; // LLena el primer elemento de la tramaCompleta con el identificador de fuente de reloj
+      //Actualiza la trama de tiempo y la agrega a la trama completa
       AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
       for (x = 0; x < 6; x++)
       {
-         tramaCompleta[2500 + x] = tiempo[x];
+         tramaCompleta[1+x] = tiempo[x];
       }
-
+      
       contMuestras = 0; // Limpia el contador de muestras
       contFIFO = 0;     // Limpia el contador de FIFOs
       T1CON.TON = 1;    // Enciende el Timer1
@@ -518,14 +518,6 @@ void int_1() org IVT_ADDR_INT1INTERRUPT
 
    INT1IF_bit = 0; // Limpia la bandera de interrupcion externa INT1
 
-   // Prueba
-   //RP1 = 1;
-   //Delay_us(20);
-   //RP1 = 0;
-   //LedTest = ~LedTest;
-   // Fin Prueba
-   
-
    if (banSetReloj == 1)
    {
       LedTest = ~LedTest;
@@ -542,16 +534,7 @@ void int_1() org IVT_ADDR_INT1INTERRUPT
          // LedTest = ~LedTest;
          Muestrear();
       }
-      
-      //Prueba
-      // Recupera el tiempo del RTC:
-         //horaSistema = RecuperarHoraRTC();                        // Recupera la hora del RTC
-         //fechaSistema = RecuperarFechaRTC();                      // Recupera la fecha del RTC
-         //AjustarTiempoSistema(horaSistema, fechaSistema, tiempo); // Actualiza los datos de la trama tiempo con la hora y fecha recuperadas
-         //fuenteReloj = 2;                                         // Fuente de reloj = RTC
-         //InterrupcionP1(0xB2);                                    // Envia la hora local a la RPi
-      //Fin prueba
-      
+
    }
 
 }
@@ -566,12 +549,10 @@ void int_2() org IVT_ADDR_INT2INTERRUPT
    if (banSyncReloj == 1)
    {
       // Cumple en este turno las tareas del pulso SQW:
-      // AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
       LedTest = ~LedTest;
       horaSistema = horaSistema + 2; // Incrementa el reloj del sistema en 2 segundos
 
       // Inicia el Timer3 de 500ms:
-      //   Inicia el Timeout 1:
       T3CON.TON = 1;
       TMR3 = 0;
 
@@ -603,13 +584,13 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT
    { // 0-224
       if ((x == 0) || (x % 9 == 0))
       {
-         tramaCompleta[contFIFO + contMuestras + x] = contMuestras;
-         tramaCompleta[contFIFO + contMuestras + x + 1] = datosFIFO[x];
+         tramaCompleta[7 + contFIFO + contMuestras + x] = contMuestras;
+         tramaCompleta[7 + contFIFO + contMuestras + x + 1] = datosFIFO[x];
          contMuestras++;
       }
       else
       {
-         tramaCompleta[contFIFO + contMuestras + x] = datosFIFO[x];
+         tramaCompleta[7 + contFIFO + contMuestras + x] = datosFIFO[x];
       }
    }
 

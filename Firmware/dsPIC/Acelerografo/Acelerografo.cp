@@ -725,8 +725,6 @@ void Muestrear()
 
  banCiclo = 2;
 
-
- tramaCompleta[0] = fuenteReloj;
  numFIFO = ADXL355_read_byte( 0x05 );
  numSetsFIFO = (numFIFO) / 3;
 
@@ -745,21 +743,23 @@ void Muestrear()
  {
  if ((x == 0) || (x % 9 == 0))
  {
- tramaCompleta[contFIFO + contMuestras + x] = contMuestras;
- tramaCompleta[contFIFO + contMuestras + x + 1] = datosFIFO[x];
+ tramaCompleta[7 + contFIFO + contMuestras + x] = contMuestras;
+ tramaCompleta[7 + contFIFO + contMuestras + x + 1] = datosFIFO[x];
  contMuestras++;
  }
  else
  {
- tramaCompleta[contFIFO + contMuestras + x] = datosFIFO[x];
+ tramaCompleta[7 + contFIFO + contMuestras + x] = datosFIFO[x];
  }
  }
 
+
+ tramaCompleta[0] = fuenteReloj;
 
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
  for (x = 0; x < 6; x++)
  {
- tramaCompleta[2500 + x] = tiempo[x];
+ tramaCompleta[1+x] = tiempo[x];
  }
 
  contMuestras = 0;
@@ -939,14 +939,6 @@ void int_1() org IVT_ADDR_INT1INTERRUPT
 
  INT1IF_bit = 0;
 
-
-
-
-
-
-
-
-
  if (banSetReloj == 1)
  {
  LedTest = ~LedTest;
@@ -964,15 +956,6 @@ void int_1() org IVT_ADDR_INT1INTERRUPT
  Muestrear();
  }
 
-
-
-
-
-
-
-
-
-
  }
 
 }
@@ -987,10 +970,8 @@ void int_2() org IVT_ADDR_INT2INTERRUPT
  if (banSyncReloj == 1)
  {
 
-
  LedTest = ~LedTest;
  horaSistema = horaSistema + 2;
-
 
 
  T3CON.TON = 1;
@@ -1024,13 +1005,13 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT
  {
  if ((x == 0) || (x % 9 == 0))
  {
- tramaCompleta[contFIFO + contMuestras + x] = contMuestras;
- tramaCompleta[contFIFO + contMuestras + x + 1] = datosFIFO[x];
+ tramaCompleta[7 + contFIFO + contMuestras + x] = contMuestras;
+ tramaCompleta[7 + contFIFO + contMuestras + x + 1] = datosFIFO[x];
  contMuestras++;
  }
  else
  {
- tramaCompleta[contFIFO + contMuestras + x] = datosFIFO[x];
+ tramaCompleta[7 + contFIFO + contMuestras + x] = datosFIFO[x];
  }
  }
 

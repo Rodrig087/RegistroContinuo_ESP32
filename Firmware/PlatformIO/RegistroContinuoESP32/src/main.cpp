@@ -343,12 +343,10 @@ void loop()
 
   if (banInicio == 1)
   {
-    if (banPrueba == 0)
+    if (banWriteSD == true)
     {
-      Serial.print("\n***************************\n");
-      Serial.print("Iniciando toma de tiempo...\n");
-      ObtenerReferenciaTiempo(2);
-      banPrueba = 1;
+      escribirArchivo(SD, pathArchivo, tramaAceleracion, 2506);
+      banWriteSD = false;
     }
     if (banTiempPIC == true)
     {
@@ -360,16 +358,18 @@ void loop()
       banTiempPIC = false;
       IniciarMuestreo();
     }
-    if (banWriteSD == true)
+    if (banPrueba == 0)
     {
-      escribirArchivo(SD, pathArchivo, tramaAceleracion, 2506);
-      banWriteSD = false;
+      Serial.print("\n***************************\n");
+      Serial.print("Iniciando toma de tiempo...\n");
+      ObtenerReferenciaTiempo(2);
+      banPrueba = 1;
     }
     // IniciarGPS();
   }
 
-  delay(100);
-  // ObtenerReferenciaTiempo(2);
+  //delay(100);
+
 }
 
 //**************************************************************************************************************************************
