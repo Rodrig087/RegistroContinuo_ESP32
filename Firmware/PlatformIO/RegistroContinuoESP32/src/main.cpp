@@ -8,7 +8,7 @@
 
 #define LedTest 2
 #define P1 17
-#define PushButtom 16
+#define P2 16
 #define MCLR 21
 
 #define HSPI_MISO 12
@@ -20,13 +20,16 @@
 static const int DELAY_SPI = 10;   // 10us
 static const int spiClk = 1000000; // 1 MHz
 
-short banInicio;
+boolean banInicioSistema = false;
 short banInitGPS;
-short banPrueba;
+boolean banNuevoCiclo = false;
 boolean banTiempPIC = false;
 boolean banWriteSD = false;
 
+boolean banPrimerEncendido = true;
+
 byte tiempoPIC[8];
+byte tiempoLocal[8];
 byte tramaAceleracion[2506];
 // short fuenteTiempoPic;
 
@@ -45,6 +48,7 @@ SPIClass *hspi = NULL;
 void IniciarMuestreo();                       // C:0xA1	F:0xF1
 void IniciarGPS();                            // C:0xA2	F:0xF2
 void ObtenerTramaAceleracion();               // C:0xA3	F:0xF3
+void EnviarTiempoLocal();                     // C:0xA4	F:0xF4
 void ObtenerTiempoPIC();                      // C:0xA5	F:0xF5
 void ObtenerReferenciaTiempo(int referencia); // C:0xA6	F:0xF6
 
@@ -79,28 +83,16 @@ void IRAM_ATTR ObtenerOperacion()
   }
   if (bufferSPI == 0xB2)
   {
-    // Serial.print("Interrupcion P1: 0xB2\n");
+    //Serial.print("Interrupcion P1: 0xB2\n");
     digitalWrite(LedTest, !digitalRead(LedTest));
     ObtenerTiempoPIC();
   }
 }
 
-void IRAM_ATTR EnviarSolicitud()
+void IRAM_ATTR NuevoCiclo()
 {
-  // Serial.print("Enviando solicitud...\n");
-
-  if (banInitGPS == 0)
-  {
-    // IniciarGPS();
-    ObtenerReferenciaTiempo(1);
-    banInitGPS = 1;
-  }
-  else
-  {
-    ObtenerReferenciaTiempo(2);
-  }
-
-  // ObtenerReferenciaTiempo(1);
+  //Serial.print("Interrupcion P2\n");
+  banNuevoCiclo = true;
 }
 
 //**************************************************************************************************************************************
@@ -170,6 +162,36 @@ void ObtenerTramaAceleracion()
   banWriteSD = true;
 }
 
+// C:0xA4	F:0xF4
+void EnviarTiempoLocal()
+{
+  //Establece el tiempo local que se enviara al dsPIC:
+  tiempoLocal[0] = 22; //anio
+  tiempoLocal[1] = 11; //mes
+  tiempoLocal[2] = 10; //dia
+  tiempoLocal[3] = 23; //hora
+  tiempoLocal[4] = 58; //minuto
+  tiempoLocal[5] = 0; //segundo
+  //  Activa la comunicacion SPI
+  hspi->beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE3));
+  digitalWrite(hspi->pinSS(), LOW);
+  // Envia la cabecera de trama:
+  hspi->transfer(0xA4);
+  delayMicroseconds(DELAY_SPI);
+  // Recibe la trama de tiempo:
+  for (short i = 0; i < 6; i++)
+  {
+    hspi->transfer(tiempoLocal[i]);
+    delayMicroseconds(DELAY_SPI);
+  }
+  // Envia el final de trama:
+  hspi->transfer(0xF4);
+  delayMicroseconds(DELAY_SPI);
+  // Desactiva la comunicacion SPI:
+  digitalWrite(hspi->pinSS(), HIGH);
+  hspi->endTransaction();
+}
+
 // C:0xA5	F:0xF5
 void ObtenerTiempoPIC()
 {
@@ -198,9 +220,6 @@ void ObtenerTiempoPIC()
   hspi->endTransaction();
 
   // Guarda la fecha y hora en formato String:
-  // fechaPIC = String(tiempoPIC[0]) + String(tiempoPIC[1]) + String(tiempoPIC[2]);
-  // horaPIC = String(tiempoPIC[3]) + String(tiempoPIC[4]) + String(tiempoPIC[5]);
-
   sprintf(bufferFecha, "%0.2d%0.2d%0.2d", tiempoPIC[0], tiempoPIC[1], tiempoPIC[2]);
   sprintf(bufferHora, "%0.2d%0.2d%0.2d", tiempoPIC[3], tiempoPIC[4], tiempoPIC[5]);
   fechaPIC = String(bufferFecha);
@@ -209,29 +228,6 @@ void ObtenerTiempoPIC()
   // Activa la bandera para indicar que se recupero la hora del dsPIC:
   banTiempPIC = true;
 
-  /*
-    // Imprime la fuente de tiempo:
-    switch (fuenteTiempoPic)
-    {
-    case 0:
-      Serial.print("RPi ");
-      break;
-    case 1:
-      Serial.print("GPS ");
-      break;
-    case 2:
-      // Serial.print("RTC ");
-      break;
-    default:
-      Serial.print("E");
-      Serial.print(fuenteTiempoPic);
-      Serial.print(" ");
-      break;
-    }
-    // Imprime la trama de tiempo:
-    tiempoString = String(tiempoPIC[3]) + ":" + String(tiempoPIC[4]) + ":" + String(tiempoPIC[5]) + " " + String(tiempoPIC[0]) + "/" + String(tiempoPIC[1]) + "/" + String(tiempoPIC[2]) + "\n";
-    Serial.print(tiempoString);
-   */
 }
 
 // C:0xA6	F:0xF6
@@ -274,17 +270,14 @@ void ObtenerReferenciaTiempo(int referencia)
 void setup()
 {
   // Inicio de variables
-  banInicio = 0;
   banInitGPS = 0;
   digitalWrite(MCLR, 1);
-  banPrueba = 0;
-  // banWriteSD = 0;
 
-  // Define los pines  LedTest como salida y P1 como entrada
+  // Define los pines de entrada y salida:  
   pinMode(LedTest, OUTPUT);
   pinMode(MCLR, OUTPUT);
   pinMode(P1, INPUT);
-  pinMode(PushButtom, INPUT);
+  pinMode(P2, INPUT);
 
   // Inicializa el puerto serial:
   Serial.begin(9600);
@@ -301,26 +294,27 @@ void setup()
   {
     Serial.println("No hay tarjeta SD conectada");
     return;
-  }
-  Serial.print("Tipo de tarjeta SD: ");
-  if (cardType == CARD_MMC)
+  } else 
   {
-    Serial.println("MMC");
+    banInicioSistema = true;
+    Serial.print("Tipo de tarjeta SD: ");
+    if (cardType == CARD_MMC)
+    {
+      Serial.println("MMC");
+    }
+    else if (cardType == CARD_SD)
+    {
+      Serial.println("SDSC");
+    }
+    else if (cardType == CARD_SDHC)
+    {
+      Serial.println("SDHC");
+    }
+    else
+    {
+      Serial.println("Desconocida");
+    }
   }
-  else if (cardType == CARD_SD)
-  {
-    Serial.println("SDSC");
-  }
-  else if (cardType == CARD_SDHC)
-  {
-    Serial.println("SDHC");
-    banInicio = 1;
-  }
-  else
-  {
-    Serial.println("Desconocida");
-  }
-
   Serial.printf("**************************************\n");
 
   // Inicializa una instancia de la clase SPIClass adjunta a hspi para la comunicacion con el dsPIC:
@@ -331,17 +325,12 @@ void setup()
 
   // Define las interrupciones
   attachInterrupt(P1, ObtenerOperacion, RISING);
-  attachInterrupt(PushButtom, EnviarSolicitud, RISING);
+  attachInterrupt(P2, NuevoCiclo, RISING);
 }
 
 void loop()
 {
-  // put your main code here, to run repeatedly:
-  // Serial.print("Hola mundo");
-
-  // banInicio = 1;
-
-  if (banInicio == 1)
+  if (banInicioSistema == true)
   {
     if (banWriteSD == true)
     {
@@ -355,20 +344,29 @@ void loop()
       pathArchivo = pathDirectorio + "/" + fechaPIC + horaPIC + ".dat";
       createDir(SD, pathDirectorio);
       crearArchivo(SD, pathArchivo);
-      banTiempPIC = false;
       IniciarMuestreo();
+      banTiempPIC = false;
     }
-    if (banPrueba == 0)
+    if (banNuevoCiclo == true)
     {
       Serial.print("\n***************************\n");
-      Serial.print("Iniciando toma de tiempo...\n");
-      ObtenerReferenciaTiempo(2);
-      banPrueba = 1;
+      Serial.print("Iniciando un nuevo ciclo de muestreo...\n");
+      if (banPrimerEncendido==true)
+      {
+        //Envia el tiempo local en el primer encendido:
+        EnviarTiempoLocal();  
+        //ObtenerReferenciaTiempo(2); 
+        banPrimerEncendido = false;
+      } 
+      else 
+      {
+        //Obtiene el tiempo del dsPIC en los siguientes ciclos de muestreo:
+        Serial.print("Obteniendo tiempo del RTC\n");
+        ObtenerReferenciaTiempo(2); 
+      }
+      banNuevoCiclo = false;
     }
-    // IniciarGPS();
   }
-
-  //delay(100);
 
 }
 

@@ -43,7 +43,7 @@ short tasaMuestreo;
 short numTMR1;
 
 unsigned short banTC, banTI, banTF; // Banderas de trama completa, inicio de trama y final de trama
-unsigned short banLec, banEsc, banCiclo, banInicio, banSetReloj, banSetGPS, banSyncReloj;
+unsigned short banLec, banEsc, banCiclo, banInicioMuestreo, banSetReloj, banSetGPS, banSyncReloj;
 unsigned short banMuestrear, banLeer, banConf;
 unsigned short banOperacion, tipoOperacion;
 
@@ -63,6 +63,7 @@ unsigned short contTimer3;
 void ConfiguracionPrincipal();
 void Muestrear();
 void InterrupcionP1(unsigned short operacion);
+void InterrupcionP2();
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////      Main      ////////////////////////////////////////////////////////////////
@@ -93,7 +94,7 @@ void main()
    banSyncReloj = 0;
 
    banMuestrear = 0; // Inicia el programa con esta bandera en bajo para permitir que la RPi envie la peticion de inicio de muestreo
-   banInicio = 0;    // Bandera de inicio de muestreo
+   banInicioMuestreo = 0;    // Bandera de inicio de muestreo
    banLeer = 0;
    banConf = 0;
 
@@ -131,7 +132,7 @@ void main()
    {
       if (banInicializar == 1)
       {
-         //GPS_init();                 // Inicializa el GPS
+         GPS_init();                 // Inicializa el GPS
          DS3234_init();              // inicializa el RTC
          ADXL355_init(tasaMuestreo); // Inicializa el modulo ADXL con la tasa de muestreo requerida
          banInicializar = 0;         // Desactiva la bandera para salir del bucle
@@ -146,6 +147,10 @@ void main()
          LedTest = ~LedTest;
          Delay_ms(150);
          LedTest = ~LedTest;
+         
+         //Indica al ESP32 que ya se inicializo el dsPIC:
+         InterrupcionP2();
+         
       }
 
       Delay_ms(1);
@@ -274,6 +279,13 @@ void InterrupcionP1(unsigned short operacion)
    Delay_us(20);
    RP1 = 0;
 }
+void InterrupcionP2()
+{
+   // Genera el pulso P2 para producir la interrupcion externa en la RPi
+   RP2 = 1;
+   Delay_us(20);
+   RP2 = 0;
+}
 //*****************************************************************************************************************************************
 
 //****************************************************************************************************************************************
@@ -382,7 +394,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT
       numSetsFIFO = 0;
       contTimer1 = 0;
       // Bandera que permite el inicio del muestreo dentro de la interrupcion INT1:
-      banInicio = 1;
+      banInicioMuestreo = 1;
    }
 
    // Rutina para inicializar el GPS:
@@ -396,25 +408,12 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT
    {
       GPS_init();
       LedTest = 0;
-      // Conmuta el LedTest para indicar que se inicializo el GPS:
-      /*
-      LedTest = 0;
-      Delay_ms(150);
-      LedTest = ~LedTest;
-      Delay_ms(150);
-      LedTest = ~LedTest;
-      Delay_ms(150);
-      LedTest = ~LedTest;
-      Delay_ms(150);
-      LedTest = ~LedTest;
-      Delay_ms(150);
-      LedTest = ~LedTest;
-      */
    }
 
    // Rutina de lectura de los datos del acelerometro (C:0xA3   F:0xF3):
    if ((banLec == 1) && (buffer == 0xA3))
-   {              // Verifica si la bandera de inicio de trama esta activa
+   {              
+      // Verifica si la bandera de inicio de trama esta activa
       banLec = 2; // Activa la bandera de lectura
       i = 0;
       SPI1BUF = tramaCompleta[i];
@@ -425,7 +424,8 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT
       i++;
    }
    if ((banLec == 2) && (buffer == 0xF3))
-   {              // Si detecta el delimitador de final de trama:
+   {
+      // Si detecta el delimitador de final de trama:
       banLec = 0; // Limpia la bandera de lectura                        ****AQUI Me QUEDE
       SPI1BUF = 0xFF;
    }
@@ -451,6 +451,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT
       horaSistema = RecuperarHoraRTC();                        // Recupera la hora del RTC
       fechaSistema = RecuperarFechaRTC();                      // Recupera la fecha del RTC
       AjustarTiempoSistema(horaSistema, fechaSistema, tiempo); // Actualiza los datos de la trama tiempo con la hora y fecha recuperadas
+      fuenteReloj = 0;                                         // Fuente de reloj = ESP32
       banEsc = 0;
       banSetReloj = 1;
       InterrupcionP1(0XB2);
@@ -469,8 +470,8 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT
       j++;
    }
    if ((banSetReloj == 2) && (buffer == 0xF5))
-   {                   // Si detecta el delimitador de final de trama:
-      banSetReloj = 1; // Reactiva la bandera de lectura
+   {                   
+      banSetReloj = 1;
       SPI1BUF = 0xFF;
    }
 
@@ -522,16 +523,19 @@ void int_1() org IVT_ADDR_INT1INTERRUPT
    {
       LedTest = ~LedTest;
       horaSistema++; // Incrementa el reloj del sistema
-      // AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
-      //  Reinicia el reloj al llegar a las 24:00:00 horas
+
+      // Reinicia el reloj al llegar a las 24:00:00 horas (24*3600)+(0*60)+(0) = 86400
       if (horaSistema == 86400)
       {
-         horaSistema = 0; //(24*3600)+(0*60)+(0) = 86400
+         banSetReloj = 0;
+         horaSistema = 0;
+         banInicioMuestreo = 0;
+         U1MODE.UARTEN = 1; // Inicializa el UART1
+         InterrupcionP2();
       }
 
-      if (banInicio == 1)
+      if (banInicioMuestreo == 1)
       {
-         // LedTest = ~LedTest;
          Muestrear();
       }
 

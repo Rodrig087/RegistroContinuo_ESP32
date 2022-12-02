@@ -204,12 +204,12 @@ void testFileIO(fs::FS &fs, const char *path)
 
 void crearArchivo(fs::FS &fs, const String path)
 {
-    Serial.printf("Escribiendo archivo: %s\n", path);
+    Serial.printf("Creando el archivo...\n");
 
     File file = fs.open(path, FILE_WRITE);
     if (!file)
     {
-        Serial.println("Error al crear el archivo");
+        Serial.println("Error al crear el archivo\n");
         return;
     }
     file.close();
@@ -217,19 +217,19 @@ void crearArchivo(fs::FS &fs, const String path)
 
 void escribirArchivo(fs::FS &fs, const String path, const byte *buffer, const short numbytes)
 {
-    //Serial.printf("Escribiendo archivo: %s\n", path);
+    // Serial.printf("Escribiendo archivo: %s\n", path);
 
     File file = fs.open(path, FILE_APPEND);
     if (!file)
     {
-        //Serial.println("Error al abrir el archivo");
+        // Serial.println("Error al abrir el archivo");
         return;
     }
     if (file.write(buffer, numbytes))
     {
         // file.write(0x0D); // CR
         // file.write(0x0A); // LF
-        //Serial.println("Archvo escrito");
+        // Serial.println("Archvo escrito");
     }
     else
     {

@@ -1295,7 +1295,7 @@ banesc
 bangpsc
 bangpsi
 baninicializar
-baninicio
+baniniciomuestreo
 baninitgps
 banlec
 banleer
@@ -5187,6 +5187,7 @@ intdiv_1_bit
 intdiv_2
 intdiv_2_bit
 interrupcionp1
+interrupcionp2
 inthldh_0
 inthldh_0_bit
 inthldh_1

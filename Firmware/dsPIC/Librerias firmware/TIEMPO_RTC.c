@@ -90,9 +90,9 @@ void DS3234_setDate(unsigned long longHora, unsigned long longFecha){
      unsigned short hora;
      unsigned short minuto;
      unsigned short segundo;
-     unsigned short dia;
-     unsigned short mes;
      unsigned short anio;
+     unsigned short mes;
+     unsigned short dia;
      
      SPI2_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_LOW, _SPI_ACTIVE_2_IDLE);
 
@@ -100,9 +100,9 @@ void DS3234_setDate(unsigned long longHora, unsigned long longFecha){
      minuto = (short)((longHora%3600) / 60);
      segundo = (short)((longHora%3600) % 60);
 
-     dia = (short)(longFecha / 10000);
+     anio = (short)(longFecha / 10000);
      mes = (short)((longFecha%10000) / 100);
-     anio = (short)((longFecha%10000) % 100);
+     dia = (short)((longFecha%10000) % 100);
 
      segundo = Dec2Bcd(segundo);
      minuto = Dec2Bcd(minuto);
@@ -117,7 +117,7 @@ void DS3234_setDate(unsigned long longHora, unsigned long longFecha){
      DS3234_write_byte(DiaMes_Esc, dia);
      DS3234_write_byte(Mes_Esc, mes);
      DS3234_write_byte(Anio_Esc, anio);
-     
+
      SPI2_Init();
      
      return;

@@ -6,7 +6,7 @@ Value=0
 [BUILD_TYPE]
 Value=0
 [ACTIVE_TAB]
-Value=Acelerografo.c
+Value=..\Librerias firmware\TIEMPO_GPS.c
 [USE_EEPROM]
 Value=0
 [USE_HEAP]
@@ -26,7 +26,7 @@ ActiveImageIndex=-1
 [OPENED_FILES]
 Count=2
 File0=Acelerografo.c
-File1=..\Librerias firmware\TIEMPO_RTC.c
+File1=..\Librerias firmware\TIEMPO_GPS.c
 [EEPROM]
 Count=0
 [ACTIVE_COMMENTS_FILES]

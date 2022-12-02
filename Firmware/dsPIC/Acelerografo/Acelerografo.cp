@@ -4,7 +4,7 @@
 
 
 
-void GPS_init(short conf, short NMA);
+void GPS_init();
 unsigned long RecuperarFechaGPS(unsigned char *tramaDatosGPS);
 unsigned long RecuperarHoraGPS(unsigned char *tramaDatosGPS);
 
@@ -13,11 +13,15 @@ unsigned long RecuperarHoraGPS(unsigned char *tramaDatosGPS);
 
 void GPS_init()
 {
-#line 48 "c:/users/milto/milton/rsa/git/registro continuo esp32/registrocontinuo_esp32/firmware/dspic/librerias firmware/tiempo_gps.c"
  UART1_Write_Text("$PMTK220,1000*1F\r\n");
+ UART1_Write_Text("$PMTK313,1*2E\r\n");
+ UART1_Write_Text("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n");
+ UART1_Write_Text("$PMTK319,1*24\r\n");
+ UART1_Write_Text("$PMTK413*34\r\n");
+ UART1_Write_Text("$PMTK513,1*28\r\n");
  Delay_ms(1000);
- UART1_Write_Text("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n");
- Delay_ms(1000);
+ U1MODE.UARTEN = 0;
+
 }
 
 
@@ -34,8 +38,8 @@ unsigned long RecuperarFechaGPS(unsigned char *tramaDatosGPS)
  tramaFecha[3] = '\0';
 
 
- datoStringF[0] = tramaDatosGPS[6];
- datoStringF[1] = tramaDatosGPS[7];
+ datoStringF[0] = tramaDatosGPS[10];
+ datoStringF[1] = tramaDatosGPS[11];
  tramaFecha[0] = atoi(ptrDatoStringF);
 
 
@@ -44,8 +48,8 @@ unsigned long RecuperarFechaGPS(unsigned char *tramaDatosGPS)
  tramaFecha[1] = atoi(ptrDatoStringF);
 
 
- datoStringF[0] = tramaDatosGPS[10];
- datoStringF[1] = tramaDatosGPS[11];
+ datoStringF[0] = tramaDatosGPS[6];
+ datoStringF[1] = tramaDatosGPS[7];
  tramaFecha[2] = atoi(ptrDatoStringF);
 
  fechaGPS = (tramaFecha[0] * 10000) + (tramaFecha[1] * 100) + (tramaFecha[2]);
@@ -140,9 +144,9 @@ void DS3234_setDate(unsigned long longHora, unsigned long longFecha){
  unsigned short hora;
  unsigned short minuto;
  unsigned short segundo;
- unsigned short dia;
- unsigned short mes;
  unsigned short anio;
+ unsigned short mes;
+ unsigned short dia;
 
  SPI2_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_LOW, _SPI_ACTIVE_2_IDLE);
 
@@ -150,9 +154,9 @@ void DS3234_setDate(unsigned long longHora, unsigned long longFecha){
  minuto = (short)((longHora%3600) / 60);
  segundo = (short)((longHora%3600) % 60);
 
- dia = (short)(longFecha / 10000);
+ anio = (short)(longFecha / 10000);
  mes = (short)((longFecha%10000) / 100);
- anio = (short)((longFecha%10000) % 100);
+ dia = (short)((longFecha%10000) % 100);
 
  segundo = Dec2Bcd(segundo);
  minuto = Dec2Bcd(minuto);
@@ -477,7 +481,7 @@ short tasaMuestreo;
 short numTMR1;
 
 unsigned short banTC, banTI, banTF;
-unsigned short banLec, banEsc, banCiclo, banInicio, banSetReloj, banSetGPS, banSyncReloj;
+unsigned short banLec, banEsc, banCiclo, banInicioMuestreo, banSetReloj, banSetGPS, banSyncReloj;
 unsigned short banMuestrear, banLeer, banConf;
 unsigned short banOperacion, tipoOperacion;
 
@@ -497,6 +501,7 @@ unsigned short contTimer3;
 void ConfiguracionPrincipal();
 void Muestrear();
 void InterrupcionP1(unsigned short operacion);
+void InterrupcionP2();
 
 
 
@@ -527,7 +532,7 @@ void main()
  banSyncReloj = 0;
 
  banMuestrear = 0;
- banInicio = 0;
+ banInicioMuestreo = 0;
  banLeer = 0;
  banConf = 0;
 
@@ -565,7 +570,7 @@ void main()
  {
  if (banInicializar == 1)
  {
-
+ GPS_init();
  DS3234_init();
  ADXL355_init(tasaMuestreo);
  banInicializar = 0;
@@ -580,6 +585,10 @@ void main()
  LedTest = ~LedTest;
  Delay_ms(150);
  LedTest = ~LedTest;
+
+
+ InterrupcionP2();
+
  }
 
  Delay_ms(1);
@@ -708,6 +717,13 @@ void InterrupcionP1(unsigned short operacion)
  Delay_us(20);
  RP1 = 0;
 }
+void InterrupcionP2()
+{
+
+ RP2 = 1;
+ Delay_us(20);
+ RP2 = 0;
+}
 
 
 
@@ -816,7 +832,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT
  numSetsFIFO = 0;
  contTimer1 = 0;
 
- banInicio = 1;
+ banInicioMuestreo = 1;
  }
 
 
@@ -830,12 +846,12 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT
  {
  GPS_init();
  LedTest = 0;
-#line 413 "C:/Users/milto/Milton/RSA/Git/Registro Continuo ESP32/RegistroContinuo_ESP32/Firmware/dsPIC/Acelerografo/Acelerografo.c"
  }
 
 
  if ((banLec == 1) && (buffer == 0xA3))
  {
+
  banLec = 2;
  i = 0;
  SPI1BUF = tramaCompleta[i];
@@ -847,6 +863,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT
  }
  if ((banLec == 2) && (buffer == 0xF3))
  {
+
  banLec = 0;
  SPI1BUF = 0xFF;
  }
@@ -872,6 +889,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT
  horaSistema = RecuperarHoraRTC();
  fechaSistema = RecuperarFechaRTC();
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+ fuenteReloj = 0;
  banEsc = 0;
  banSetReloj = 1;
  InterrupcionP1(0XB2);
@@ -947,12 +965,15 @@ void int_1() org IVT_ADDR_INT1INTERRUPT
 
  if (horaSistema == 86400)
  {
+ banSetReloj = 0;
  horaSistema = 0;
+ banInicioMuestreo = 0;
+ U1MODE.UARTEN = 1;
+ InterrupcionP2();
  }
 
- if (banInicio == 1)
+ if (banInicioMuestreo == 1)
  {
-
  Muestrear();
  }
 

@@ -160,14 +160,12 @@ if (banExtraer == 1):
     print('Z:' + ' Media = ' + str(meanZ) + ' Mediana = ' + str(medZ) + ' RSM = ' + str(rmsZ))
     
     #Corrige los vectores
-    #Corrige los valores de las 2 primeras muestras:
+    #Corrige los valores de las i primeras muestras:
     if (correccionInercia==1):
-        xTrama[0] = rmsX
-        yTrama[0] = rmsY
-        zTrama[0] = rmsZ
-        xTrama[1] = rmsX
-        yTrama[1] = rmsY
-        zTrama[1] = rmsZ
+        for i in range(0, 3):
+            xTrama[i] = meanX
+            yTrama[i] = meanY
+            zTrama[i] = meanZ    
     #Realiza el offset de la señales:
     for i in range(0, len(xTrama)):
         xTrama[i] = xTrama[i] - meanX
